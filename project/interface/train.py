@@ -124,7 +124,7 @@ def render_train_interface(
         df.append({"epoch": epoch, "loss": total_loss, "correct": correct})
         st_epoch_stats.write(pd.DataFrame(reversed(df)))
 
-        st_epoch_image.plotly_chart(plot())
+        st_epoch_image.plotly_chart(plot(), key=f"epoch_image_{epoch}")
         if hasattr(train, "train"):
             loss_graph = go.Scatter(mode="lines", x=list(range(len(losses))), y=losses)
             fig = go.Figure(loss_graph)
@@ -133,7 +133,7 @@ def render_train_interface(
                 xaxis=dict(range=[0, max_epochs]),
                 yaxis=dict(range=[0, max(losses)]),
             )
-            st_epoch_plot.plotly_chart(fig)
+            st_epoch_plot.plotly_chart(fig, key=f"loss_plot_{epoch}")
 
             print(
                 f"Epoch: {epoch}/{max_epochs}, loss: {total_loss}, correct: {correct}"
