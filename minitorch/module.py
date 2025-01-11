@@ -53,7 +53,7 @@ class Module:
         
         def dfs(module, name=""):
             named_params.extend((name + k, v) for k, v in module._parameters.items())
-            for k, v in module.__dict__["_modules"].items():
+            for k, v in module._modules.items():
                 dfs(v, name + k + ".")
 
         dfs(self)
@@ -66,7 +66,7 @@ class Module:
 
         def dfs(module):
             params.extend(module._parameters.values())
-            for v in module.__dict__["_modules"].values():
+            for v in module._modules.values():
                 dfs(v)
 
         dfs(self)
