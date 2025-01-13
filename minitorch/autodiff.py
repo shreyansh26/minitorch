@@ -22,9 +22,15 @@ def central_difference(f: Any, *vals: Any, arg: int = 0, epsilon: float = 1e-6) 
     Returns:
         An approximation of $f'_i(x_0, \ldots, x_{n-1})$
     """
-    # TODO: Implement for Task 1.1.
-    raise NotImplementedError('Need to implement for Task 1.1')
+    
+    values = []
+    for i, _ in enumerate(vals):
+        if i == arg:
+            values.append(f(vals[i] + epsilon))
+        else:
+            values.append(f(vals[i]))
 
+    return [(values[i] - f(vals[i])) / epsilon for i in range(len(values))]
 
 variable_count = 1
 
@@ -61,8 +67,20 @@ def topological_sort(variable: Variable) -> Iterable[Variable]:
     Returns:
         Non-constant Variables in topological order starting from the right.
     """
-    # TODO: Implement for Task 1.4.
-    raise NotImplementedError('Need to implement for Task 1.4')
+    sorted_vars = []
+    visited = set()
+    
+    def dfs(v: Variable):
+        if v.is_constant() or v in visited:
+            return
+        visited.add(v)
+        if not v.is_leaf():
+            for p in v.parents:
+                dfs(p)
+        sorted_vars.append(v)
+    
+    dfs(variable)
+    return sorted_vars[::-1]
 
 
 def backpropagate(variable: Variable, deriv: Any) -> None:
@@ -76,8 +94,24 @@ def backpropagate(variable: Variable, deriv: Any) -> None:
 
     No return. Should write to its results to the derivative values of each leaf through `accumulate_derivative`.
     """
-    # TODO: Implement for Task 1.4.
-    raise NotImplementedError('Need to implement for Task 1.4')
+    topo_sorted_vars = topological_sort(variable)
+    node_deriv = {variable.unique_id: deriv}
+
+    for v in topo_sorted_vars:
+        if v.unique_id not in node_deriv:
+            continue
+        
+        curr_deriv = node_deriv[v.unique_id]
+        chain_deriv = v.chain_rule(curr_deriv)
+
+        for v, d in chain_deriv:
+            if v.is_leaf():
+                v.accumulate_derivative(d)
+            else:
+                if v.unique_id not in node_deriv:
+                    node_deriv[v.unique_id] = d
+                else:
+                    node_deriv[v.unique_id] += d
 
 
 @dataclass
