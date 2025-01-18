@@ -130,9 +130,6 @@ class Scalar:
     def relu(self) -> Scalar:
         return ReLU.apply(self)
 
-    def __hash__(self) -> int:
-        return hash(self.unique_id)
-
     # Variable elements for backprop
 
     def accumulate_derivative(self, x: Any) -> None:
