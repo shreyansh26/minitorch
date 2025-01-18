@@ -60,7 +60,8 @@ def to_index(ordinal: int, shape: Shape, out_index: OutIndex) -> None:
         out_index : return index corresponding to position.
 
     """
-    strides = np.concatenate(([1], np.cumprod(shape[::-1][:-1])))[::-1]
+    # strides = np.concatenate(([1], np.cumprod(shape[::-1][:-1])))[::-1]
+    strides = strides_from_shape(shape)
     for idx, ind in enumerate(shape):
         out_index[idx] = ordinal // strides[idx]
         ordinal = ordinal % strides[idx]
