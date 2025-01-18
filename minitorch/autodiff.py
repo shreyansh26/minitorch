@@ -70,15 +70,16 @@ def topological_sort(variable: Variable) -> Iterable[Variable]:
     visited = set()
     
     def dfs(v: Variable):
-        if v.is_constant() or v in visited:
+        if v.is_constant() or v.unique_id in visited:
             return
-        visited.add(v)
+        visited.add(v.unique_id)
         if not v.is_leaf():
             for p in v.parents:
                 dfs(p)
         sorted_vars.append(v)
     
     dfs(variable)
+    # Return from right to left
     return sorted_vars[::-1]
 
 
