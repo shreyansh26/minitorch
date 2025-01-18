@@ -119,6 +119,7 @@ def test_two_grad_broadcast(
     "Test the grad of a two argument function"
     name, base_fn, tensor_fn = fn
     t1, t2 = ts
+    
     grad_check(tensor_fn, t1, t2)
 
     # broadcast check
