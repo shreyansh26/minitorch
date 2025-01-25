@@ -42,6 +42,7 @@ def index_to_position(index: Index, strides: Strides) -> int:
     Returns:
         Position in storage
     """
+    assert len(index) == len(strides)
     position = 0
     for idx, ind in enumerate(index):
         position += ind * strides[idx]
@@ -61,10 +62,38 @@ def to_index(ordinal: int, shape: Shape, out_index: OutIndex) -> None:
 
     """
     # strides = np.concatenate(([1], np.cumprod(shape[::-1][:-1])))[::-1]
-    strides = strides_from_shape(shape)
-    for idx, ind in enumerate(shape):
-        out_index[idx] = ordinal // strides[idx]
-        ordinal = ordinal % strides[idx]
+    # # strides = strides_from_shape(shape)
+    # for idx, ind in enumerate(shape):
+    #     out_index[idx] = ordinal // strides[idx]
+    #     ordinal = ordinal % strides[idx]
+
+    # Replace the concatenate with direct array operations
+    # size = len(shape)
+    # strides = np.empty(size, dtype=np.int32)
+    # strides[size - 1] = 1
+    # for i in range(size - 2, -1, -1):
+    #     strides[i] = strides[i + 1] * shape[i + 1]
+        
+    # for idx in range(len(shape)):
+    #     out_index[idx] = ordinal // strides[idx]
+    #     ordinal = ordinal % strides[idx]
+
+    # size = len(shape)
+    # strides = np.zeros(size, dtype=np.int32)
+    # strides[size - 1] = 1
+    # for i in range(size - 2, -1, -1):
+    #     strides[i] = strides[i + 1] * shape[i + 1]
+    
+    # # Calculate indices without modifying ordinal
+    # cur_ordinal = ordinal
+    # for idx in range(len(shape)):
+    #     out_index[idx] = cur_ordinal // strides[idx]
+    #     cur_ordinal = cur_ordinal % strides[idx]
+
+    cur_ord = ordinal
+    for i in range(len(shape) - 1, -1, -1):
+        out_index[i] = int(cur_ord % shape[i])
+        cur_ord = cur_ord // shape[i]
 
 def broadcast_index(
     big_index: Index, big_shape: Shape, shape: Shape, out_index: OutIndex
