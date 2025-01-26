@@ -380,8 +380,34 @@ def _mm_practice(out: Storage, a: Storage, b: Storage, size: int) -> None:
         size (int): size of the square
     """
     BLOCK_DIM = 32
-    # TODO: Implement for Task 3.3.
-    raise NotImplementedError('Need to implement for Task 3.3')
+    block_row = cuda.blockIdx.x
+    block_col = cuda.blockIdx.y
+    
+    thread_row = cuda.threadIdx.x
+    thread_col = cuda.threadIdx.y
+
+    row_index = block_row * BLOCK_DIM + thread_row
+    col_index = block_col * BLOCK_DIM + thread_col
+
+    a_shared = cuda.shared.array((BLOCK_DIM, BLOCK_DIM), numba.float64)
+    b_shared = cuda.shared.array((BLOCK_DIM, BLOCK_DIM), numba.float64)
+
+    for k in range(math.ceil(size / BLOCK_DIM)):
+        if row_index < size and (k * BLOCK_DIM + thread_col) < size:
+            a_shared[thread_row, thread_col] = a[row_index * size + (k * BLOCK_DIM + thread_col)]
+        else:
+            a_shared[thread_row, thread_col] = 0.0
+        if col_index < size and (k * BLOCK_DIM + thread_row) < size:
+            b_shared[thread_row, thread_col] = b[(k * BLOCK_DIM + thread_row) * size + col_index]
+        else:
+            b_shared[thread_row, thread_col] = 0.0
+        
+        cuda.syncthreads()
+        
+        for i in range(BLOCK_DIM):
+            out[row_index * size + col_index] += a_shared[thread_row, i] * b_shared[i, thread_col]
+        
+        cuda.syncthreads()
 
 
 jit_mm_practice = cuda.jit()(_mm_practice)
