@@ -392,6 +392,8 @@ def _mm_practice(out: Storage, a: Storage, b: Storage, size: int) -> None:
     a_shared = cuda.shared.array((BLOCK_DIM, BLOCK_DIM), numba.float64)
     b_shared = cuda.shared.array((BLOCK_DIM, BLOCK_DIM), numba.float64)
 
+    tmp = 0.0
+
     for k in range(math.ceil(size / BLOCK_DIM)):
         if row_index < size and (k * BLOCK_DIM + thread_col) < size:
             a_shared[thread_row, thread_col] = a[row_index * size + (k * BLOCK_DIM + thread_col)]
@@ -405,10 +407,12 @@ def _mm_practice(out: Storage, a: Storage, b: Storage, size: int) -> None:
         cuda.syncthreads()
         
         for i in range(BLOCK_DIM):
-            out[row_index * size + col_index] += a_shared[thread_row, i] * b_shared[i, thread_col]
+            tmp += a_shared[thread_row, i] * b_shared[i, thread_col]
         
         cuda.syncthreads()
 
+    if row_index < size and col_index < size:
+        out[row_index * size + col_index] = tmp
 
 jit_mm_practice = cuda.jit()(_mm_practice)
 
@@ -476,8 +480,29 @@ def _tensor_matrix_multiply(
     #    a) Copy into shared memory for a matrix.
     #    b) Copy into shared memory for b matrix
     #    c) Compute the dot produce for position c[i, j]
-    # TODO: Implement for Task 3.4.
-    raise NotImplementedError('Need to implement for Task 3.4')
+    # NOT CORRECT
+    tmp = 0.0
 
+    for k in range(math.ceil(a_shape[-1] / BLOCK_DIM)):
+        a_offset = batch * a_batch_stride + i * a_strides[-1] + (k * BLOCK_DIM + pj)
+        b_offset = batch * b_batch_stride + (k * BLOCK_DIM + pi) * b_strides[-1] + j
+        if i < a_shape[-2] and (k * BLOCK_DIM + pj) < a_shape[-1]:
+            a_shared[pi, pj] = a_storage[a_offset]
+        else:
+            a_shared[pi, pj] = 0.0
+        if j < b_shape[-1] and (k * BLOCK_DIM + pi) < b_shape[-2]:
+            b_shared[pi, pj] = b_storage[b_offset]
+        else:
+            b_shared[pi, pj] = 0.0
+        cuda.syncthreads()
+
+        for bd in range(BLOCK_DIM):
+            tmp += a_shared[pi, bd] * b_shared[bd, pj]
+        
+        cuda.syncthreads()
+    
+    if i < out_shape[-2] and j < out_shape[-1]:
+        out_offset = batch * out_strides[0] + i * out_strides[-2] + j * out_strides[-1]
+        out[out_offset] = tmp
 
 tensor_matrix_multiply = cuda.jit(_tensor_matrix_multiply)
