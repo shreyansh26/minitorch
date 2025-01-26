@@ -308,27 +308,54 @@ def _tensor_matrix_multiply(
     Returns:
         None : Fills in `out`
     """
+    # a_batch_stride = a_strides[0] if a_shape[0] > 1 else 0
+    # b_batch_stride = b_strides[0] if b_shape[0] > 1 else 0
+
+    # assert a_shape[-1] == b_shape[-2]
+
+    # for out_idx in prange(len(out)):
+    #     ini_dims = out_idx // (out_shape[-1] * out_shape[-2])
+    #     out_first_dim = (out_idx % (out_shape[-1] * out_shape[-2])) // out_shape[-1]
+    #     out_last_dim = out_idx % out_shape[-1]
+
+    #     out_offset = ini_dims * out_shape[0] + out_first_dim * out_strides[1] + out_last_dim * out_strides[2]
+
+    #     a_offset = ini_dims * a_batch_stride + out_first_dim * a_strides[1]
+    #     b_offset = ini_dims * b_batch_stride + out_last_dim * b_strides[2]
+        
+    #     temp = 0
+
+    #     for pos in range(a_shape[-1]):
+    #         temp += a_storage[a_offset + pos * a_strides[2]] * b_storage[b_offset + pos * b_strides[1]]
+
+    #     out[out_offset] = temp
+
     a_batch_stride = a_strides[0] if a_shape[0] > 1 else 0
     b_batch_stride = b_strides[0] if b_shape[0] > 1 else 0
 
     assert a_shape[-1] == b_shape[-2]
 
-    for out_idx in prange(len(out)):
-        ini_dims = out_idx // (out_shape[-1] * out_shape[-2])
-        out_first_dim = (out_idx % (out_shape[-1] * out_shape[-2])) // out_shape[-1]
-        out_last_dim = out_idx % out_shape[-1]
+    for i in prange(len(out)):
+        out_0 = i // (out_shape[-1] * out_shape[-2])
+        out_1 = (i % (out_shape[-1] * out_shape[-2])) // out_shape[-1]
+        out_2 = i % out_shape[-1]
 
-        out_offset = ini_dims * out_shape[0] + out_first_dim * out_strides[1] + out_last_dim * out_strides[2]
+        out_i = (
+            out_0 * out_strides[0] +
+            out_1 * out_strides[1] +
+            out_2 * out_strides[2]
+        )
 
-        a_offset = ini_dims * a_batch_stride + out_first_dim * a_strides[1]
-        b_offset = ini_dims * b_batch_stride + out_last_dim * b_strides[2]
-        
+        a_start = out_0 * a_batch_stride + out_1 * a_strides[1]
+        b_start = out_0 * b_batch_stride + out_2 * a_strides[2]
+
         temp = 0
-
-        for pos in range(a_shape[-1]):
-            temp += a_storage[a_offset + pos * a_strides[2]] * b_storage[b_offset + pos * b_strides[1]]
-
-        out[out_offset] = temp
+        for position in range(a_shape[-1]):
+            temp += (
+                a_storage[a_start + position * a_strides[2]] *
+                b_storage[b_start + position * b_strides[1]]
+            )
+        out[out_i] = temp
 
 
 tensor_matrix_multiply = njit(parallel=True, fastmath=True)(_tensor_matrix_multiply)
